@@ -1,0 +1,26 @@
+package pij.game;
+
+/**
+ * Enum representing the current state of the SkraBBKle game.
+ */
+public enum GameState {
+    /**
+     * Game is in progress
+     */
+    IN_PROGRESS,
+    
+    /**
+     * Game has ended with a human player win
+     */
+    HUMAN_WIN,
+    
+    /**
+     * Game has ended with a computer player win
+     */
+    COMPUTER_WIN,
+    
+    /**
+     * Game has ended in a draw
+     */
+    DRAW
+}

@@ -1,0 +1,300 @@
+package pij.util;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import pij.model.Board;
+import pij.model.Position;
+import pij.model.PremiumType;
+import pij.model.Square;
+
+/**
+ * Utility class for loading board configurations from files.
+ */
+public class BoardLoader {
+    
+    // Regular expressions for parsing the board tokens
+    private static final String STANDARD_PATTERN = "\\.";
+    private static final String LETTER_PREMIUM_PATTERN = "\\(([-]?\\d{1,2})\\)";
+    private static final String WORD_PREMIUM_PATTERN = "\\{([-]?\\d{1,2})\\}";
+    
+    /**
+     * Load a board from a file.
+     * 
+     * @param filePath Path to the board file
+     * @return Loaded board or null if the file is invalid
+     */
+    public static Board loadBoard(String filePath) {
+        try {
+            List<String> lines = FileLoader.loadFile(filePath);
+            
+            if (lines.isEmpty()) {
+                return null;
+            }
+            
+            // Parse the board size from the first line
+            int size;
+            try {
+                size = Integer.parseInt(lines.get(0).trim());
+                
+                // Check if the size is valid
+                if (size < 11 || size > 26) {
+                    return null;
+                }
+            } catch (NumberFormatException e) {
+                return null;
+            }
+            
+            // Create a new board
+            Board board = new Board(size);
+            
+            // Parse the board squares from the remaining lines
+            for (int row = 0; row < size && row + 1 < lines.size(); row++) {
+                String line = lines.get(row + 1);
+                
+                // Check if the line has the correct length (no spaces allowed)
+                if (!isValidBoardLine(line, size)) {
+                    return null;
+                }
+                
+                // Parse the tokens in the line
+                int col = 0;
+                int pos = 0;
+                
+                while (col < size && pos < line.length()) {
+                    Square square = parseSquare(line, pos);
+                    
+                    if (square != null) {
+                        board.setSquare(new Position(row + 1, col), square);
+                        
+                        // Move to the next token
+                        if (line.charAt(pos) == '.') {
+                            // Standard square is 1 character
+                            pos += 1;
+                        } else if (line.charAt(pos) == '(') {
+                            // Letter premium square is 3-4 characters
+                            String token = extractToken(line, pos, LETTER_PREMIUM_PATTERN);
+                            pos += token.length();
+                        } else if (line.charAt(pos) == '{') {
+                            // Word premium square is 3-4 characters
+                            String token = extractToken(line, pos, WORD_PREMIUM_PATTERN);
+                            pos += token.length();
+                        } else {
+                            // Invalid token
+                            return null;
+                        }
+                        
+                        col++;
+                    } else {
+                        // Invalid token
+                        return null;
+                    }
+                }
+                
+                // Check if we parsed all columns
+                if (col != size) {
+                    return null;
+                }
+            }
+            
+            // Check if we parsed all rows
+            if (lines.size() - 1 != size) {
+                return null;
+            }
+            
+            return board;
+    }
+}
+        } catch (IOException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * Check if a board line is valid.
+     * 
+     * @param line Line to check
+     * @param size Expected number of tokens in the line
+     * @return true if the line is valid, false otherwise
+     */
+    private static boolean isValidBoardLine(String line, int size) {
+        if (line == null || line.isEmpty()) {
+            return false;
+        }
+        
+        // Count the number of tokens in the line
+        int count = 0;
+        int pos = 0;
+        
+        while (pos < line.length()) {
+            if (line.charAt(pos) == '.') {
+                // Standard square is 1 character
+                pos += 1;
+                count++;
+            } else if (line.charAt(pos) == '(') {
+                // Letter premium square is 3-4 characters
+                String token = extractToken(line, pos, LETTER_PREMIUM_PATTERN);
+                if (token.isEmpty()) {
+                    return false;
+                }
+                pos += token.length();
+                count++;
+            } else if (line.charAt(pos) == '{') {
+                // Word premium square is 3-4 characters
+                String token = extractToken(line, pos, WORD_PREMIUM_PATTERN);
+                if (token.isEmpty()) {
+                    return false;
+                }
+                pos += token.length();
+                count++;
+            } else {
+                // Invalid token
+                return false;
+            }
+        }
+        
+        return count == size;
+    }
+    
+    /**
+     * Extract a token from a line using a regex pattern.
+     * 
+     * @param line Line to extract from
+     * @param pos Starting position in the line
+     * @param pattern Regex pattern to match
+     * @return Extracted token or empty string if no match
+     */
+    private static String extractToken(String line, int pos, String pattern) {
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(line.substring(pos));
+        
+        if (m.find() && m.start() == 0) {
+            return m.group();
+        }
+        
+        return "";
+    }
+    
+    /**
+     * Parse a square token from a line.
+     * 
+     * @param line Line to parse from
+     * @param pos Position in the line
+     * @return Parsed square or null if the token is invalid
+     */
+    private static Square parseSquare(String line, int pos) {
+        if (pos >= line.length()) {
+            return null;
+        }
+        
+        char firstChar = line.charAt(pos);
+        
+        if (firstChar == '.') {
+            // Standard square
+            return new Square();
+        } else if (firstChar == '(') {
+            // Letter premium square
+            String token = extractToken(line, pos, LETTER_PREMIUM_PATTERN);
+            
+            if (!token.isEmpty()) {
+                try {
+                    // Extract the premium value from the token
+                    int value = Integer.parseInt(token.substring(1, token.length() - 1));
+                    
+                    // Check if the value is valid
+                    if (value >= -9 && value <= 99) {
+                        return new Square(PremiumType.LETTER, value);
+                    }
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        } else if (firstChar == '{') {
+            // Word premium square
+            String token = extractToken(line, pos, WORD_PREMIUM_PATTERN);
+            
+            if (!token.isEmpty()) {
+                try {
+                    // Extract the premium value from the token
+                    int value = Integer.parseInt(token.substring(1, token.length() - 1));
+                    
+                    // Check if the value is valid
+                    if (value >= -9 && value <= 99) {
+                        return new Square(PremiumType.WORD, value);
+                    }
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Creates the default SkraBBKle board.
+     * 
+     * @return Default board
+     */
+    public static Board createDefaultBoard() {
+        // Create a board of size 16 (as per the specification)
+        Board board = new Board(16);
+        
+        // Define the board layout as specified
+        String[] boardLayout = {
+            ".{12}..(2)...{3}...(2)..{8}",
+            "..{2}...(3)...(3)...{2}.",
+            "...{2}...(2).(2)...{2}..",
+            ".(2)..{2}...(2)...{2}..(2)",
+            ".....{2}.....{0}....",
+            "..(3)...(3)...(3)...(3).",
+            "...(2)...(2).(2)...(2)..",
+            "(3){-3}..(2)...{2}...(-4)..{-2}",
+            "...(2)...(2).(2)...(2)..",
+            "..(3)...(3)...(3)...(3).",
+            ".....{2}.....{2}....",
+            ".(2)..{-1}...(0)...{-1}..(2)",
+            "...{2}...(2).(9)...{2}..",
+            "..{2}...(3)...(3)...{2}.",
+            ".{9}..(2)...{3}...(2)..{16}",
+            "........(3)......."
+        };
+        
+        // Parse each line and set the squares on the board
+        for (int row = 0; row < 16; row++) {
+            String line = boardLayout[row];
+            
+            int col = 0;
+            int pos = 0;
+            
+            while (col < 16 && pos < line.length()) {
+                Square square = parseSquare(line, pos);
+                
+                if (square != null) {
+                    board.setSquare(new Position(row + 1, col), square);
+                    
+                    // Move to the next token
+                    if (line.charAt(pos) == '.') {
+                        // Standard square is 1 character
+                        pos += 1;
+                    } else if (line.charAt(pos) == '(') {
+                        // Letter premium square is 3-4 characters
+                        String token = extractToken(line, pos, LETTER_PREMIUM_PATTERN);
+                        pos += token.length();
+                    } else if (line.charAt(pos) == '{') {
+                        // Word premium square is 3-4 characters
+                        String token = extractToken(line, pos, WORD_PREMIUM_PATTERN);
+                        pos += token.length();
+                    }
+                    
+                    col++;
+                } else {
+                    break;
+                }
+            }
+        }
+        
+        return board;
+                    

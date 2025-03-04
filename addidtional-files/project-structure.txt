@@ -1,0 +1,28 @@
+pij.main
+  |-- Main.java (entry point)
+pij.model
+  |-- Board.java (board and premium squares)
+  |-- Square.java (individual board squares)
+  |-- PremiumType.java (enum for premium types)
+  |-- Tile.java (letter tiles with values)
+  |-- TileBag.java (bag of tiles)
+  |-- Rack.java (player's tile rack)
+  |-- Move.java (represent a move)
+  |-- Position.java (position on board)
+  |-- Direction.java (enum for move direction)
+  |-- Word.java (represent a word on the board)
+pij.player
+  |-- Player.java (base player class)
+  |-- HumanPlayer.java (human player logic)
+  |-- ComputerPlayer.java (computer player AI)
+pij.game
+  |-- Game.java (main game logic)
+  |-- GameState.java (game state enum)
+  |-- GameFactory.java (create different game types)
+pij.util
+  |-- BoardLoader.java (load board from file)
+  |-- Dictionary.java (word list checker)
+  |-- FileLoader.java (general file utility)
+  |-- InputValidator.java (validate user input)
+test
+  |-- Various test files for JUnit tests
