@@ -1,6 +1,6 @@
 # Skrabble
 
-This project implements a Scrabble-like board game called SkraBBKle, where a human player competes against a computer player. The game follows specific rules for tile placement, scoring, and game termination as described in the project specification.
+This project implements a Scrabble-like board game called SkraBBKle, where a human player competes against a computer player. The game follows specific rules for tile placement, scoring, and game termination as described in the project specification. You will find in the additional files folder all the files necessary to run this game. Alternatively, there is a compiled-main file that also has all the functionality of the additonal files.
 
 ## How to Run
 
